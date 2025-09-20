@@ -6,7 +6,7 @@ output: html_document
 
 ## Name
 
-Please enter your name here.
+Mason Reed
 
 ### Setup
 
@@ -15,7 +15,9 @@ Read in the data with `read_csv()` and store the data as an R object named `data
 
 ```{r}
 ## Load the data and any necessary packages here.
-
+maacs = read.csv('maacs.csv.gz')
+library(ggplot2)
+library(tidyverse)
 ```
 
 ## Part 1
@@ -33,6 +35,24 @@ NOTE: For this part, do not use any plots.
 ```{r}
 ## Write your function here
 
+fev1_age_positive <- function(df) {
+
+  # fit linear regression of FEV1 on age
+  fev1_m <- lm(fev1 ~ age, data = df)
+  
+  # extract the slope for age
+  slope <- coef(fev1_m)["age"]
+  
+  # return TRUE if slope is positive, FALSE otherwise
+  return(slope > 0)
+}
+
+  
+
+
+
+fev1_age_positive(maacs)
+
 ```
 
 
@@ -43,14 +63,15 @@ Fit a linear regression model with FEV1 as the outcome and age as a predictor.
 How much does FEV1 change for a 1-year increase in the child's age? 
 
 ```{r}
-## Add your code here
 
+fev1_m <- lm(fev1 ~ age, data = maacs)
+coef(fev1_m)
 ```
 
 
 Write your data analysis statement interpreting the regression model here:
 
-
+The regression model suggests that fev1 increases with age by 0.171 for an increase of 1 year in age.
 
 ## Part 3
 
@@ -65,16 +86,47 @@ NOTE:
 ```{r}
 ## Add your code here
 
+# Premise 1 Scatterplot
+ggplot(maacs, aes(x = age, y = fev1)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue") +  
+  labs(
+    title = "Scatterplot of FEV1 vs Age (Supporting Premise 1)",
+    x = "Age (years)",
+    y = "FEV1"
+  ) +
+  theme_minimal()
+
+fev1_summary = summary(fev1_m)
+
+
+  
+  # extract slope estimate and p-value and correlation for age
+  slope <- coef(fev1_m)["age"]
+  p_val = coef(fev1_summary)["age", "Pr(>|t|)"]
+  correlation = sqrt(fev1_summary$r.squared)
+  
+  # Slope P-Value Correlation Table
+   results <- data.frame(
+    Slope_Estimate = slope,
+    P_Value = p_val,
+    Correlation = correlation,
+    Slope_Positive = slope > 0,
+    Significant_Positive = (p_val < 0.05 & slope > 0)
+  )
+  results
+
+
 ```
 
 
 Write the three supporting premise statements here:
 
-1. 
+1. The scatterplot shows fev1 generally increasing as the individuals are older.
 
-2. 
+2. The correlation of `r round(correlation,3)` suggests a strong, positive relationship which supports the positive slope value of 0.171.
 
-3. 
+3. The positive slope in combination with the small p-value for the slope supports the positive relationship between fev1 and age.
 
 
 ## Part 4
@@ -90,29 +142,71 @@ For statements involving plots, instead of returning `TRUE` or `FALSE`, you func
 
 ```{r}
 ## Function for supporting premise statement 1
+scatter <- function(dataframe) {
+ggplot(dataframe, aes(x = age, y = fev1)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue") +  
+  labs(
+    title = "Scatterplot of FEV1 vs Age (Premise 1 Test)",
+    x = "Age (years)",
+    y = "FEV1"
+  ) +
+  theme_minimal()
+}
 
 ```
 
 
 ```{r}
 ## Function for supporting premise statement 2
-
+check_correlation_plus <- function(df){
+  fev1_lm = lm(fev1~age,df)
+  fev1_summary = summary(fev1_lm)
+  correlation = sqrt(fev1_summary$r.squared)
+  return (correlation > 0)
+}
 ```
 
 
 ```{r}
 ## Function for supporting premise statement 3
-
+premise3_pval_test <- function(df) {
+  
+  fit <- lm(fev1 ~ age, data = df)
+  
+  # get summary of the regression
+  fit_summary <- summary(fit)
+  
+  # extract slope estimate and p-value for age
+  slope <- coef(fit)["age"]
+  p_val <- coef(fit_summary)["age", "Pr(>|t|)"]
+  
+  return (slope > 0 & p_val < 0.01)
+ 
+}
 ```
 
 Execute each of your function and show that the produce the expected output.
+```{r}
+# Premise 1 Test : Scatterplot
+scatter(maacs)
 
+# Premise 2 Test: Correlation Coef
+check_correlation_plus(maacs)
+
+# Premise 3 Test: P-val and Positive Slope
+premise3_pval_test(maacs)
+
+
+```
 
 
 
 ## Part 5
 
 Describe one alternative to the primary statement "FEV1 values in children are higher in older children relative to younger children". 
+
+Alternative: FEV1 Values are the same for older children relative to younger children.
 
 Create a fault tree for the alternative outcome describing how the alternative outcome could be realized in the data even if the primary statement were true.
 
